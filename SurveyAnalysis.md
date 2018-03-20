@@ -166,4 +166,72 @@ gcontri_emp<-ggplot(data=gContri_emp, aes(x=type_of_contribution, y=Number, fill
 ```
 ![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/emp-contri.png)
 
+#### Future contribution interest vs likelihood
+Next, I wanted to analyse, how likely are people to contribute in the future according to their interest.
+
+For this I experimented with a heatmap for visualisation. The lighter the colour, the more is the relationship.
+
+```R
+future_contribution <- subset(df,,select=c("FUTURE.CONTRIBUTION.INTEREST","FUTURE.CONTRIBUTION.LIKELIHOOD","GENDER"))
+future_contribution[future_contribution==""] <- NA
+likliness<-with(future_contribution,table(FUTURE.CONTRIBUTION.INTEREST,FUTURE.CONTRIBUTION.LIKELIHOOD))
+likeliness_matrix <- data.matrix(likliness)
+likeliness_matrix<-na.omit(likeliness_matrix)
+likeliness_heatmap <- heatmap(likeliness_matrix, Rowv=NA, Colv=NA, col = heat.colors(5,0.5), scale="col", margins=c(10,10),cexRow = 1,cexCol = 1)
+```
+
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/heatmap.png)
+
+#### Future contribution interest vs Gender
+In this, I wanted to analyse, how interest in future contribution varies according to category of the gender. As we can clearly see men have a higher interest as compared to other gender categories like women and non-binary.
+
+```R
+#subset of dataframe
+future_contribution<-subset(df,,select=c("FUTURE.CONTRIBUTION.INTEREST","FUTURE.CONTRIBUTION.LIKELIHOOD","GENDER"))
+interest<-with(future_contribution,table(GENDER,FUTURE.CONTRIBUTION.INTEREST))
+
+#new dataframe according to columns of interest
+ginterest <- data.frame(supp=rep(c("Not at all interested", "Not too interested","Somewhat interested","Very interested"), each=4),gender=c("Man","Non-binary  or Other","Prefer not to say", "Woman "),Number=c(interest[2,2],interest[3,2],interest[4,2],interest[5,2],interest[2,3],interest[3,3],interest[4,3],interest[5,3],interest[2,4],interest[3,4],interest[4,4],interest[5,4],interest[2,5],interest[3,5],interest[4,5],interest[5,5]))
+#Plot                          
+gInterest<-ggplot(data=ginterest, aes(x=gender, y=Number, fill=supp)) +
+  geom_bar(stat="identity", position=position_dodge()) + scale_fill_brewer(palette="Blues")
+```
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/interest-gender.png)
+
+#### Future contribution Likelihood vs Gender
+In this, I wanted to analyse, how likelihood  in future contribution varies according to category of the gender. As we can clearly see men have a higher probability of contributing as compared to other gender categories like women and non-binary.
+
+```R
+#subsetting
+future_contribution<-subset(df,,select=c("FUTURE.CONTRIBUTION.INTEREST","FUTURE.CONTRIBUTION.LIKELIHOOD","GENDER"))
+likelihood<-with(future_contribution,table(GENDER,FUTURE.CONTRIBUTION.LIKELIHOOD))
+
+#new dataframe
+glikelihood <- data.frame(supp=rep(c("Not at all interested", "Not too interested","Somewhat interested","Very interested"), each=4),gender=c("Man","Non-binary  or Other","Prefer not to say", "Woman "),Number=c(likelihood[2,2],likelihood[3,2],likelihood[4,2],likelihood[5,2],likelihood[2,3],likelihood[3,3],likelihood[4,3],likelihood[5,3],likelihood[2,4],likelihood[3,4],likelihood[4,4],likelihood[5,4],likelihood[2,5],likelihood[3,5],likelihood[4,5],likelihood[5,5]))
+
+#plot
+gLikelihood<-ggplot(data=glikelihood, aes(x=gender, y=Number, fill=supp)) +
+  geom_bar(stat="identity", position=position_dodge()) + scale_fill_brewer(palette="Blues")
+
+```
+
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/likeli-gender.png.png)
+
+#### Employment status vs gender
+Lastly I wanted to analyse the status of employement across various gender categories. The role of men is mostly full time and in sharp contrast to the employment status of other gender categories.
+```R
+emp_gender <- subset(df, , select = c("GENDER","EMPLOYMENT.STATUS"))
+g_emp_gender<-with(emp_gender,table(EMPLOYMENT.STATUS,GENDER))
+
+G_emp_gender <- data.frame(supp=rep(c("Employed full time ", "Employed part time","Full time student","Other","Retired or permanently not working (e.g. due to disability)","Temporarily not working"), each=4),gender=c("Man","Non-binary  or Other","Prefer not to say", "Woman "),Number=c(g_emp_gender[2,2],g_emp_gender[3,2],g_emp_gender[4,2],g_emp_gender[5,2],g_emp_gender[6,2],g_emp_gender[7,2],g_emp_gender[2,3],g_emp_gender[3,3],g_emp_gender[4,3],g_emp_gender[5,3],g_emp_gender[6,3],g_emp_gender[7,3],g_emp_gender[2,4],g_emp_gender[3,4],g_emp_gender[4,4],g_emp_gender[5,4],g_emp_gender[6,4],g_emp_gender[7,4],g_emp_gender[2,5],g_emp_gender[3,5],g_emp_gender[4,5],g_emp_gender[5,5],g_emp_gender[6,5],g_emp_gender[7,5]))
+                          
+G_Emp_Gender<-ggplot(data=G_emp_gender, aes(x=gender, y=Number, fill=supp)) +
+  geom_bar(stat="identity", position=position_dodge()) + scale_fill_brewer(palette="Blues")
+```
+
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/emp-gender.png)
+
+
+
+
 
