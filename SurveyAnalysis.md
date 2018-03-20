@@ -11,6 +11,7 @@ Further, head() command was used to see the first few rows and get an idea about
 ```R
 library(ggplot2) #for plots 
 library(reshape2) #for reshaing data 
+library(chorddiag) #chord diagram library
 df <- read.csv("/home/reen/Downloads/data_for_public_release/data_for_public_release/survey_data.csv",header = TRUE,na.strings=" ",sep = ",")
 #dataframe df, header=True implies that the first row of the csv file is to be taken as header for various columns.
 rows<-nrow(df) #number of rows
@@ -49,6 +50,7 @@ same which was analysed using a bar-graph.
 ```R
 #subset a few columns from the larger dataframe for analysis
 types_participations = subset(df, , select = c("PARTICIPATION.TYPE.FOLLOW", "PARTICIPATION.TYPE.USE.APPLICATIONS","PARTICIPATION.TYPE.USE.DEPENDENCIES","PARTICIPATION.TYPE.CONTRIBUTE","PARTICIPATION.TYPE.OTHER","GENDER"))
+
 n_follow<-length(types_participations$PARTICIPATION.TYPE.FOLLOW[types_participations$PARTICIPATION.TYPE.FOLLOW == "1"]) #number of participants of type follow
 n_applications<-length(types_participations$PARTICIPATION.TYPE.USE.APPLICATIONS[types_participations$PARTICIPATION.TYPE.USE.APPLICATIONS=="1"]) #number of participants of type appplications
 n_dependencies<-length(types_participations$PARTICIPATION.TYPE.USE.DEPENDENCIES[types_participations$PARTICIPATION.TYPE.USE.DEPENDENCIES=="1"]) #number of participants of type dependencies
@@ -63,7 +65,105 @@ p<-ggplot(data=gdf, aes(x=type_of_particiation, y=Number)) + geom_bar(stat="iden
 ```
 ![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/bar-graph.png)
 
+#### Genderwise articipations data
+Next I wanted to find out the genderwise participations in various types of data.
+
+```R
+follow_gender<-with(types_participations, table(PARTICIPATION.TYPE.FOLLOW, GENDER)) #Table for genderwise participation of type follow
+gender_applications<-with(types_participations, table(PARTICIPATION.TYPE.USE.APPLICATIONS, GENDER)) #Table for genderwise participation of type applications
+gender_dependencies<-with(types_participations, table(PARTICIPATION.TYPE.USE.DEPENDENCIES, GENDER)) #Table for genderwise participation of type dependencies
+gender_contribute<-with(types_participations, table(PARTICIPATION.TYPE.CONTRIBUTE, GENDER)) #Table for genderwise participation of type contribute
+gender_other<-with(types_participations, table(PARTICIPATION.TYPE.OTHER, GENDER)) #Table for genderwise participation of type other
+
+#Gender wise contributions Plot
+gPart <- data.frame(supp=rep(c("Men", "Women","Non-Binary or Other","Prefer_Not_To_Say"), each=5),type_of_particiation=c( "APPLICATIONS", "CONTRIBUTE","DEPENDENCIES","FOLLOW","OTHER"),Number=c(follow_gender[2,2],gender_applications[2,2],gender_contribute[2,2],gender_dependencies[2,2],gender_other[2,2],follow_gender[2,3],gender_applications[2,3],gender_contribute[2,3],gender_dependencies[2,3],gender_other[2,3],follow_gender[2,4],gender_applications[2,4],gender_contribute[2,4],gender_dependencies[2,4],gender_other[2,4],follow_gender[2,5],gender_applications[2,5],gender_contribute[2,5],gender_dependencies[2,5],gender_other[2,5]))
+
+# Plot a grouped bar chart for a better understanding.
+gpart<-ggplot(data=gPart, aes(x=type_of_particiation, y=Number, fill=supp)) +
+  geom_bar(stat="identity", position=position_dodge()) + scale_fill_brewer(palette="Blues")
+```
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/genderwise-part.png)
+
+We can clearly infer from the above graph that men participate the maximum in open source , whereas, particiation by other genders are almost negligible in comparison to men.
+
+#### Intersections - People contributing to more than one type
+Next, I used a chord diagram to represent how each individual makes more than one type of participation.
+The thickness of each line represents the number of participants common between two types.
+```R
+A_C<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.APPLICATIONS==1 & PARTICIPATION.TYPE.CONTRIBUTE==1))
+A_D<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.APPLICATIONS==1 & PARTICIPATION.TYPE.USE.DEPENDENCIES==1))
+A_F<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.APPLICATIONS==1 & PARTICIPATION.TYPE.FOLLOW==1))
+A_O<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.APPLICATIONS==1 & PARTICIPATION.TYPE.OTHER==1))
+C_D<-nrow(subset(types_participations, PARTICIPATION.TYPE.CONTRIBUTE==1 & PARTICIPATION.TYPE.USE.DEPENDENCIES==1))
+C_F<-nrow(subset(types_participations, PARTICIPATION.TYPE.CONTRIBUTE==1 & PARTICIPATION.TYPE.FOLLOW==1))
+C_O<-nrow(subset(types_participations, PARTICIPATION.TYPE.CONTRIBUTE==1 & PARTICIPATION.TYPE.OTHER==1))
+D_F<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.DEPENDENCIES==1 & PARTICIPATION.TYPE.FOLLOW==1))
+D_O<-nrow(subset(types_participations, PARTICIPATION.TYPE.USE.DEPENDENCIES==1 & PARTICIPATION.TYPE.OTHER==1))
+F_O<-nrow(subset(types_participations, PARTICIPATION.TYPE.FOLLOW==1 & PARTICIPATION.TYPE.OTHER==1))
+
+Table_chord = matrix(c(0,A_C, A_D, A_F, A_O, A_C,0,C_D, C_F,C_O, A_D, C_D, 0,D_F, D_O,A_F,C_F,D_F,0,F_O,A_O,C_O,D_O,F_O,0),nrow=5,ncol=5,byrow = TRUE)
+dimnames(Table_chord) = list(c("Applications","Contributions","Dependencies","Follow","Other"), c("Applications","Contributions","Dependencies","Follow","Other"))
+df2 = data.frame(from = rep(rownames(Table_chord), times = ncol(Table_chord)),
+                to = rep(colnames(Table_chord), each = nrow(Table_chord)),
+                value = as.vector(Table_chord),
+                stringsAsFactors = FALSE)
+#chordDiagram(Table_chord)
+chorddiag(Table_chord, groupnamePadding = 20,showTicks=FALSE)
+
+```
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/chord.png)
 
 
+The thickness of each line represents the number of participants common between two types.This is indicated below by a few examples.
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/ChordDiag.png)
+
+
+#### Contributions and their frequenct vs gender
+After participations, I wanted to analyse the various types of contributions made by various people of different gender categories and how frequently they are involved in contributions. For this, I again used a stacked bar chart for visualisation.
+
+```R
+#subsetting the original dataframe
+types_contributions = subset(df, , select = c("CONTRIBUTOR.TYPE.CONTRIBUTE.CODE",	"CONTRIBUTOR.TYPE.CONTRIBUTE.DOCS",	"CONTRIBUTOR.TYPE.PROJECT.MAINTENANCE",	"CONTRIBUTOR.TYPE.FILE.BUGS",	"CONTRIBUTOR.TYPE.FEATURE.REQUESTS",	"CONTRIBUTOR.TYPE.COMMUNITY.ADMIN","GENDER","EMPLOYMENT.STATUS"))
+
+#Creating tables
+frequency_code<-with(types_contributions, table(CONTRIBUTOR.TYPE.CONTRIBUTE.CODE, GENDER))
+frequency_docs<-with(types_contributions, table(CONTRIBUTOR.TYPE.CONTRIBUTE.DOCS, GENDER))
+frequency_maintenance<-with(types_contributions, table(CONTRIBUTOR.TYPE.PROJECT.MAINTENANCE, GENDER))
+frequency_bugs<-with(types_contributions, table(CONTRIBUTOR.TYPE.FILE.BUGS, GENDER))
+frequency_requests<-with(types_contributions, table(CONTRIBUTOR.TYPE.FEATURE.REQUESTS, GENDER))
+frequency_admin<-with(types_contributions, table(CONTRIBUTOR.TYPE.COMMUNITY.ADMIN, GENDER))
+
+#new dataframe with required columns
+gContri_frequent <- data.frame(supp=rep(c("Men","Non-Binary or Other","Prefer_Not_To_Say","Women"), each=6),type_of_contribution=c("ADMIN","BUGS","CODE", "DOCS","REQUESTS","MAINTENANCE"),Number=c(frequency_admin[2,2],frequency_bugs[2,2],frequency_code[2,2],frequency_docs[2,2],frequency_maintenance[2,2],frequency_requests[2,2],frequency_admin[2,3],frequency_bugs[2,3],frequency_code[2,3],frequency_docs[2,3],frequency_maintenance[2,3],frequency_requests[2,3],frequency_admin[2,4],frequency_bugs[2,4],frequency_code[2,4],frequency_docs[2,4],frequency_maintenance[2,4],frequency_requests[2,4],frequency_admin[2,5],frequency_bugs[2,5],frequency_code[2,5],frequency_docs[2,5],frequency_maintenance[2,5],frequency_requests[2,5]))
+
+#plotting the graph
+gcontri_frequent<-ggplot(data=gContri_frequent, aes(x=type_of_contribution, y=Number, fill=supp)) +
+geom_bar(stat="identity", position=position_dodge()) + scale_fill_brewer(palette="Blues")
+
+```
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/contri-freq.png)
+
+
+#### Contributions Frequency vs Employment type?
+Here , I wanted to find out how frequently does each individual contributes with resect to employment time? In other words, does being employed full time affect open source contributions? The results were infact quite surprising. People who are employed full time are infact contributing a lot.
+
+```R
+#Creating tables
+emp_code<-with(types_contributions, table(CONTRIBUTOR.TYPE.CONTRIBUTE.CODE, EMPLOYMENT.STATUS))
+emp_docs<-with(types_contributions, table(CONTRIBUTOR.TYPE.CONTRIBUTE.DOCS, EMPLOYMENT.STATUS))
+emp_maintenance<-with(types_contributions, table(CONTRIBUTOR.TYPE.PROJECT.MAINTENANCE, EMPLOYMENT.STATUS))
+emp_bugs<-with(types_contributions, table(CONTRIBUTOR.TYPE.FILE.BUGS, EMPLOYMENT.STATUS))
+emp_requests<-with(types_contributions, table(CONTRIBUTOR.TYPE.FEATURE.REQUESTS, EMPLOYMENT.STATUS))
+emp_admin<-with(types_contributions, table(CONTRIBUTOR.TYPE.COMMUNITY.ADMIN, EMPLOYMENT.STATUS))
+
+#new dataframe with required columns
+gContri_emp <- data.frame(supp=rep(c("Employed full time", "Employed part time","Full time student Other","Other","Retired or permanently not working"), each=6),type_of_contribution=c("ADMIN","BUGS","CODE", "DOCS","REQUESTS","MAINTENANCE"),Number=c(emp_admin[2,2],emp_bugs[2,2],emp_code[2,2],emp_docs[2,2],emp_maintenance[2,2],emp_requests[2,2],emp_admin[2,3],emp_bugs[2,3],emp_code[2,3],emp_docs[2,3],emp_maintenance[2,3],emp_requests[2,3],emp_admin[2,4],emp_bugs[2,4],emp_code[2,4],emp_docs[2,4],emp_maintenance[2,4],emp_requests[2,4],emp_admin[2,5],emp_bugs[2,5],emp_code[2,5],emp_docs[2,5],emp_maintenance[2,5],emp_requests[2,5],emp_admin[2,6],emp_bugs[2,6],emp_code[2,6],emp_docs[2,6],emp_maintenance[2,6],emp_requests[2,6]))
+    
+#plot    
+gcontri_emp<-ggplot(data=gContri_emp, aes(x=type_of_contribution, y=Number, fill=supp)) +
+  geom_bar(stat="identity", position=position_dodge())
+
+```
+![alt text](https://github.com/avneet14027/Github-Survey-analysis/blob/master/emp-contri.png)
 
 
